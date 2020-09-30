@@ -6,6 +6,8 @@ from pathlib import Path
 from mpd import MPDClient
 from mpd import CommandError
 from subprocess import Popen
+from gi.repository import Notify
+from gi.repository.GdkPixbuf import Pixbuf
 
 # cache folder for storing album arts
 CACHE = str( Path.home() ) + '/.cache/mpd-notify'
@@ -16,13 +18,18 @@ PORT = 6600
 
 #global MPD variable
 client = MPDClient()
-	
-#TODO notify library
+
+#init libnotify
+Notify.init("mpd-notificate")
+
 def notify ( head, body, albumArt ):
+	notif = Notify.Notification.new(head, body)
+	notif.set_urgency( Notify.Urgency.LOW )
 	if albumArt:
-		Popen(['notify-send', '-u', 'low', '-i', albumArt, head, body])
-	else:
-		Popen(['notify-send', '-u', 'low', head, body])
+		pic = Pixbuf .new_from_file(albumArt)
+		notif.set_image_from_pixbuf(pic)
+
+	notif.show()
 
 def getImage ( path ):
 	fileName = CACHE + "/tmp.png"
@@ -34,7 +41,7 @@ def getImage ( path ):
 
 	# try to get image
 	try:
-		buf = client . albumart ( path )		
+		buf = client . albumart ( path )
 	except CommandError:
 		return ""
 

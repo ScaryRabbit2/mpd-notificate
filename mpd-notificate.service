@@ -1,6 +1,5 @@
 [Unit]
 Description=A mpd notification daemon
-#Documentation=
 
 [Service]
 ExecStart=/usr/bin/mpd-notificate
