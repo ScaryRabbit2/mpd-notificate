@@ -1,4 +1,5 @@
 #!/bin/python3
+
 import time
 import os
 from pathlib import Path
@@ -6,16 +7,35 @@ from mpd import MPDClient
 from mpd import CommandError
 from subprocess import Popen
 
-client = MPDClient()
 CACHE = str( Path.home() ) + '/.cache/mpd-notify'
 HOST = "localhost"
 PORT = 6600
+
+client = MPDClient()
 	
 def notify ( head, body, albumArt ):
 	if albumArt:
 		Popen(['notify-send', '-u', 'low', '-i', albumArt, head, body])
 	else:
 		Popen(['notify-send', '-u', 'low', head, body])
+
+def getImage ( path ):
+	fileName = CACHE + "/tmp.png"
+
+	#does not get the same picture more times
+	if getImage . prevPath == path:
+		return fileName
+	getImage . prevPath = path
+
+	try:
+		buf = client . albumart ( path )		
+	except CommandError:
+		return ""
+
+	file = open( fileName, "wb" )
+	file.write( buf )
+	file.close()
+	return fileName
 
 def parseFile ( path ):
 	folder = ""
@@ -28,19 +48,6 @@ def parseFile ( path ):
 			file += i
 
 	return folder, file
-
-def getImage ( path ):
-	try:
-		buf = client . albumart ( path )		
-	except CommandError:
-		return ""
-
-	fileName = CACHE + "/tmp.png"
-
-	file = open( fileName, "wb" )
-	file.write( buf )
-	file.close()
-	return fileName
 
 def getData ( song ):
 	head = ""
@@ -79,11 +86,13 @@ def loop():
 		curSong = client . currentsong()
 		curStatus = client . status() [ 'state' ]
 
-		if curSong != prevSong or curStatus != prevStatus:
-			if curStatus == 'play':
-				handleNotify( curSong )
-			else:
+		if prevStatus == 'play':
+			if curStatus in [ 'pause', 'stop' ]: # stop playing
 				handleNotify( curSong, True )
+			elif curSong != prevSong: # change playing song
+				handleNotify( curSong )
+		elif curStatus != prevStatus: # start playing
+			handleNotify ( curSong )
 
 		prevSong = curSong
 		prevStatus = curStatus
@@ -91,13 +100,8 @@ def loop():
 
 def main():
 	client . connect ( HOST, PORT )
+	getImage . prevPath = ""
 	loop()
-	
-def start():
-	try:
-		main()
-	except ConnectionError:
-		start()
 
 if __name__ == "__main__":
-	start()
+	main()
