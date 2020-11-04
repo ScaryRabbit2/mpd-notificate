@@ -1,0 +1,11 @@
+[Unit]
+Description=A mpd notification daemon
+#Documentation=
+
+[Service]
+ExecStart=/usr/bin/mpd-notificate
+Restart=always
+RestartSec=12
+
+[Install]
+WantedBy=default.target
