@@ -7,12 +7,17 @@ from mpd import MPDClient
 from mpd import CommandError
 from subprocess import Popen
 
+# cache folder for storing album arts
 CACHE = str( Path.home() ) + '/.cache/mpd-notify'
+
+# conection to MPD
 HOST = "localhost"
 PORT = 6600
 
+#global MPD variable
 client = MPDClient()
 	
+#TODO notify library
 def notify ( head, body, albumArt ):
 	if albumArt:
 		Popen(['notify-send', '-u', 'low', '-i', albumArt, head, body])
@@ -27,16 +32,19 @@ def getImage ( path ):
 		return fileName
 	getImage . prevPath = path
 
+	# try to get image
 	try:
 		buf = client . albumart ( path )		
 	except CommandError:
 		return ""
 
+	# write raw image to file
 	file = open( fileName, "wb" )
 	file.write( buf )
 	file.close()
 	return fileName
 
+# Parses path into folders and file
 def parseFile ( path ):
 	folder = ""
 	file = ""
@@ -54,29 +62,35 @@ def getData ( song ):
 	body = ""
 	folder, file = parseFile( song['file'] )
 
+	# if artist available, otherwise folder name
 	if 'artist' in song:
 		head = song['artist']
 	else: head = folder
 
+	# if title available, oherwise file name
 	if 'title' in song:
 		body = song['title']
 	else: body = file
 
 	return head, body
 
+# handles metadata
 def handleNotify ( song , stop = False ):
+	# if there is no selected, it doesnt try to get them
 	if 'file' in song:
 		head, body = getData( song )
 		image = getImage ( song['file']  )
 	else:
 		image = head = body = ""
 
+	# stopped message with no picture
 	if stop:
 		head = 'Stopped'
 		image = ""
 
 	notify( head, body, image )
 
+# endless loop, checks for activity
 def loop():
 	prevSong = client . status() [ 'state' ]
 	prevStatus = client . currentsong()
@@ -97,7 +111,7 @@ def loop():
 		prevSong = curSong
 		prevStatus = curStatus
 
-
+# starts loop and connects to client
 def main():
 	client . connect ( HOST, PORT )
 	getImage . prevPath = ""
